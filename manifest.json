@@ -1,0 +1,10 @@
+{
+  "name": "Vinyl-Archiv",
+  "short_name": "Vinyl-Archiv",
+  "description": "Persönliche Vinyl-Sammlung mit Fotos, Suche und Dublettenhinweisen.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f0e6",
+  "theme_color": "#182b27",
+  "icons": []
+}

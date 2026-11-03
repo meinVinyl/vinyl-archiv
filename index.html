@@ -49,7 +49,7 @@ button,.button{border:0;border-radius:10px;background:var(--ink);color:#fff;padd
 </section>
 <section class="panel" id="discogsPanel">
 <h2>Album bei Discogs suchen</h2>
-<p class="small">Suche nach Interpret und Albumtitel. Wähle anschließend die passende Veröffentlichung aus. Die Suche nutzt die öffentliche Discogs-Datenbank; sie erkennt Coverfotos noch nicht automatisch.</p>
+<p class="small">Suche nach Interpret und Albumtitel. Wähle anschließend die passende Veröffentlichung aus. Beim Übernehmen versucht die App, das Cover zusätzlich direkt aus den Veröffentlichungsdetails zu laden.</p>
 <label for="discogsArtist">Interpret / Band</label><input id="discogsArtist" autocomplete="off" placeholder="z. B. Pink Floyd">
 <label for="discogsTitle">Albumtitel</label><input id="discogsTitle" autocomplete="off" placeholder="z. B. The Dark Side of the Moon">
 <button type="button" id="discogsSearchBtn">Bei Discogs suchen</button>
@@ -128,13 +128,36 @@ async function searchDiscogs(){
  }catch(err){status.textContent='Die Discogs-Suche war nicht möglich: '+err.message+' Falls der Fehler bestehen bleibt, kann der Browser die direkte Verbindung zur Discogs-API blockieren.';}
  finally{$('discogsSearchBtn').disabled=false;}
 }
-function applyDiscogs(r){
+async function applyDiscogs(r){
  const raw=(r.title||'').trim(); let artist=$('discogsArtist').value.trim(); let title=$('discogsTitle').value.trim();
  if(!artist && raw.includes(' - ')){artist=raw.split(' - ')[0].trim();title=raw.split(' - ').slice(1).join(' - ').trim();}
  $('artist').value=artist; $('title').value=title||raw; $('year').value=r.year||'';
  $('label').value=(r.label||[]).join(', '); $('catalogue').value=r.catno||'';
  $('pressing').value=[r.country,r.format&&r.format.join(', ')].filter(Boolean).join(' / ');
- const coverUrl=r.cover_image||r.thumb||'';if(coverUrl){currentPhoto=coverUrl;$('coverPreview').src=coverUrl;$('coverPreview').style.display='block';}else{currentPhoto='';$('coverPreview').style.display='none';$('coverPreview').src='';}
+ let coverUrl=r.cover_image||r.thumb||'';
+ $('discogsStatus').textContent='Veröffentlichung wird übernommen; Cover wird gesucht …';
+ if(!coverUrl && r.resource_url){
+  try{
+   const detailResponse=await fetch(r.resource_url,{headers:{'Accept':'application/vnd.discogs.v2.plaintext+json'}});
+   if(detailResponse.ok){
+    const detail=await detailResponse.json();
+    const images=Array.isArray(detail.images)?detail.images:[];
+    if(images.length)coverUrl=images[0].uri||images[0].uri150||'';
+   }
+  }catch(e){/* Die Metadaten können auch ohne Cover übernommen werden. */}
+ }
+ if(coverUrl){
+  currentPhoto=coverUrl;
+  $('coverPreview').src=coverUrl;
+  $('coverPreview').style.display='block';
+  $('coverPreview').onerror=()=>{currentPhoto='';$('coverPreview').style.display='none';$('discogsStatus').textContent='Die Discogs-Daten wurden übernommen, aber das Coverbild konnte nicht angezeigt werden. Du kannst ein Coverfoto manuell auswählen.';};
+  $('discogsStatus').textContent='Cover gefunden. Bitte Angaben prüfen und anschließend „Platte speichern“ drücken.';
+ }else{
+  currentPhoto='';
+  $('coverPreview').style.display='none';
+  $('coverPreview').src='';
+  $('discogsStatus').textContent='Die Discogs-Daten wurden übernommen, aber Discogs hat für diese Ausgabe kein abrufbares Cover geliefert. Du kannst ein Coverfoto manuell auswählen.';
+ }
  $('formTitle').textContent='Discogs-Daten prüfen und speichern';window.scrollTo({top:0,behavior:'smooth'});show('Discogs-Daten übernommen. Bitte Angaben und Pressung prüfen und anschließend „Platte speichern“ drücken.');
 }
 $('discogsSearchBtn').addEventListener('click',searchDiscogs);

@@ -123,7 +123,7 @@ async function searchDiscogs(){
   const data=await response.json(); const results=data.results||[];
   if(!results.length){status.textContent='Keine passenden Veröffentlichungen gefunden.';return;}
   status.textContent=results.length+' Treffer. Bitte die richtige Ausgabe auswählen:';
-  host.innerHTML=results.map((r,i)=>'<article class="record"><div>'+(r.cover_image?'<img class="cover" src="'+esc(r.cover_image)+'" alt="Cover">':'<div class="cover">KEIN<br>COVER</div>')+'</div><div><h3>'+esc(r.title||'Unbekannter Titel')+'</h3><p>'+esc([r.year,r.country,(r.label||[]).join(', '),(r.format||[]).join(', ')].filter(Boolean).join(' · '))+'</p><p>Katalognummer: '+esc((r.catno||'—'))+'</p><button type="button" class="secondary" data-discogs="'+i+'">Diese Ausgabe übernehmen</button></div></article>').join('');
+  host.innerHTML=results.map((r,i)=>'<article class="record"><div>'+((r.cover_image||r.thumb)?'<img class="cover" src="'+esc(r.cover_image||r.thumb)+'" alt="Cover">':'<div class="cover">KEIN<br>COVER</div>')+'</div><div><h3>'+esc(r.title||'Unbekannter Titel')+'</h3><p>'+esc([r.year,r.country,(r.label||[]).join(', '),(r.format||[]).join(', ')].filter(Boolean).join(' · '))+'</p><p>Katalognummer: '+esc((r.catno||'—'))+'</p><button type="button" class="secondary" data-discogs="'+i+'">Diese Ausgabe übernehmen</button></div></article>').join('');
   host.querySelectorAll('[data-discogs]').forEach(btn=>btn.addEventListener('click',()=>applyDiscogs(results[Number(btn.dataset.discogs)])));
  }catch(err){status.textContent='Die Discogs-Suche war nicht möglich: '+err.message+' Falls der Fehler bestehen bleibt, kann der Browser die direkte Verbindung zur Discogs-API blockieren.';}
  finally{$('discogsSearchBtn').disabled=false;}
@@ -134,7 +134,7 @@ function applyDiscogs(r){
  $('artist').value=artist; $('title').value=title||raw; $('year').value=r.year||'';
  $('label').value=(r.label||[]).join(', '); $('catalogue').value=r.catno||'';
  $('pressing').value=[r.country,r.format&&r.format.join(', ')].filter(Boolean).join(' / ');
- if(r.cover_image){currentPhoto=r.cover_image;$('coverPreview').src=r.cover_image;$('coverPreview').style.display='block';}else{currentPhoto='';$('coverPreview').style.display='none';$('coverPreview').src='';}
+ const coverUrl=r.cover_image||r.thumb||'';if(coverUrl){currentPhoto=coverUrl;$('coverPreview').src=coverUrl;$('coverPreview').style.display='block';}else{currentPhoto='';$('coverPreview').style.display='none';$('coverPreview').src='';}
  $('formTitle').textContent='Discogs-Daten prüfen und speichern';window.scrollTo({top:0,behavior:'smooth'});show('Discogs-Daten übernommen. Bitte Angaben und Pressung prüfen und anschließend „Platte speichern“ drücken.');
 }
 $('discogsSearchBtn').addEventListener('click',searchDiscogs);
